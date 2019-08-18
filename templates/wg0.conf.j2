@@ -1,0 +1,13 @@
+[Interface]
+PrivateKey = {{ wg_private_key['content'] | b64decode }}
+Address = {{ internal_net }}
+ListenPort = {{ wg_port }}
+
+{% for host in groups['wireguard'] | difference([inventory_hostname]) %}
+# Entry for host {{ host }}
+[Peer]
+PublicKey = {{ hostvars[host]['wg_public_key']['content'] | b64decode }}
+AllowedIPs = {{ hostvars[host]['internal_net'] }}
+Endpoint = {{ hostvars[host]['wg_public_ip'] }}:{{ hostvars[host]['wg_port'] }}
+
+{% endfor %}

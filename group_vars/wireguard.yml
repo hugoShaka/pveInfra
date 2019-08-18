@@ -1,0 +1,2 @@
+wg_private_key_path: "/etc/wireguard/{{ inventory_hostname }}.key"
+wg_public_key_path: "{{ wg_private_key_path }}.pub"
