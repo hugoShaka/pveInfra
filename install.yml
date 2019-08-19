@@ -129,8 +129,34 @@
         group: root
         mode: 0600
 
+    - name: Install dnsmasq
+      apt:
+        name: dnsmasq
+        state: installed
+      environment:
+        RUNLEVEL: 1
+
+    - name: Deploy dnsmasq.conf
+      template:
+        src: dnsmasq.conf.j2
+        dest: /etc/dnsmasq.conf
+        owner: root
+        group: root
+        mode: 0640
+      notify: restart dnsmasq
+
+    - name: Ensure dnsmasq is started
+      service:
+        name: dnsmasq
+        state: started
+
+
   handlers:
     - name: reload vmbr0
       command: "ifup vmbr0"
     - name: generate wireguard publickey
       command: "wg pubkey < {{ wg_private_key_path }} > {{ wg_public_key_path }}"
+    - name: restart dnsmasq
+      service:
+        name: dnsmasq
+        state: restarted

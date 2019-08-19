@@ -1,6 +1,6 @@
 127.0.0.1       localhost.localdomain localhost
-{{ ansible_default_ipv4.address }}   {{ inventory_hostname }}.local {{ inventory_hostname }}
-{{ ansible_default_ipv4.address }}   {{ ansible_hostname }}.local {{ ansible_hostname }}
+{{ pve_public_ip }}   {{ inventory_hostname }}.local {{ inventory_hostname }}
+{{ pve_public_ip }}   {{ ansible_hostname }}.local {{ ansible_hostname }}
 
 # The following lines are desirable for IPv6 capable hosts
 ::1     localhost ip6-localhost ip6-loopback

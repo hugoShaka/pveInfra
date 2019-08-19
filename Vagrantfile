@@ -10,16 +10,20 @@ ansible_host_vars = {
   "north" => {
     "internal_ip" => "10.10.10.1",
     "internal_net" => "10.10.10.0/24",
+    "internal_net_prefix" => "10.10.10",
     "nat_interface" => "eth0",
     "wg_public_ip" => "10.0.50.100",
-    "wg_port" => "9000"
+    "wg_port" => "9000",
+    "pve_public_ip" => "10.0.50.100"
   },
   "south" => {
     "internal_ip" => "10.10.11.1",
     "internal_net" => "10.10.11.0/24",
+    "internal_net_prefix" => "10.10.11",
     "nat_interface" => "eth0",
     "wg_public_ip" => "10.0.50.101",
-    "wg_port" => "9000"
+    "wg_port" => "9000",
+    "pve_public_ip" => "10.0.50.101"
   },
 }
 
