@@ -1,0 +1,11 @@
+{
+  "service": {
+    "id": "proxmox",
+    "name": "PVE Service",
+    "tags": ["system"],
+    "meta": {
+      "meta": "for my service"
+    }
+  }
+}
+
