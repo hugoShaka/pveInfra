@@ -1,5 +1,6 @@
+# vim: ft=ansible
 - name: Bootstrap proxmox
-  hosts: all
+  hosts: proxmox
   become: true
   tasks:
     - name: Create .ssh directory for user root
@@ -131,7 +132,7 @@
       when: "'pve_first_node' not in group_names"
 
 - name: Configure network
-  hosts: all
+  hosts: proxmox
   tasks:
     - name: Apt pin unstable
       blockinfile:
@@ -275,6 +276,25 @@
       notify: reload vmbr0
       # beware, it will disconnect all running containers and VMs from the network
 
+    - name: Add haproxy apt key
+      apt_key:
+        url: https://haproxy.debian.net/bernat.debian.org.gpg
+
+    - name: Add haptoxy apt repository
+      apt_repository:
+        repo: "deb http://haproxy.debian.net buster-backports-2.0 main"
+        filename: haproxy
+
+    - name: Install haproxy
+      apt:
+        name: "haproxy=2.0.*"
+
+    - name: Download consul-template
+      unarchive:
+        src: https://releases.hashicorp.com/consul-template/0.21.3/consul-template_0.21.3_linux_amd64.zip
+        dest: /usr/local/bin/
+        remote_src: yes
+
   handlers:
     - name: reload vmbr0
       command: "ifup vmbr0"
@@ -291,3 +311,52 @@
       systemd:
         name: consul
         state: restarted
+
+- name: Create containers
+  hosts: proxmox
+  tasks:
+    - name: List installed container templates
+      command:
+        argv:
+          - pveam
+          - list
+          - local
+      register: local_templates
+      changed_when: false
+
+    - name: List available containe templates
+      command:
+        argv:
+          - pveam
+          - available
+          - "-section"
+          - system
+      register: available_templates
+      changed_when: false
+
+    - name: Parse available images to get latest debian 10
+      set_fact:
+        proxmox_container_debian: '{{ available_templates.stdout_lines|
+                                      select("search", ".*debian-10.*-standard.*")|
+                                      list|first}}'
+
+    - name: Clean available image name
+      set_fact:
+        proxmox_container_debian: "{{proxmox_container_debian.split()|last}}"
+
+    - name: DBEUG
+      debug:
+        msg: "{{proxmox_container_debian}}"
+
+    - name: Download debian 10 container if not here
+      command:
+        argv:
+          - pveam
+          - download
+          - local
+          - "{{ proxmox_container_debian }}"
+      when: local_templates.stdout_lines | select("search", proxmox_container_debian) | list | length == 0
+
+
+
+

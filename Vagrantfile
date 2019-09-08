@@ -55,6 +55,7 @@ Vagrant.configure(2) do |config|
   config.vm.define "roquefort" do |subconfig|
     subconfig.vm.hostname = "proxmox-roquefort"
     subconfig.vm.network "forwarded_port", guest: 8006, host: 8005
+    subconfig.vm.network "forwarded_port", guest: 80, host: 8080
     subconfig.vm.network "forwarded_port", guest: 8500, host: 8500
     subconfig.vm.provider "virtualbox" do |vb|
       subconfig.vm.network "private_network", ip: "10.0.50.100"
@@ -63,6 +64,7 @@ Vagrant.configure(2) do |config|
   config.vm.define "morbier" do |subconfig|
     subconfig.vm.hostname = "proxmox-morbier"
     subconfig.vm.network "forwarded_port", guest: 8006, host: 8004
+    subconfig.vm.network "forwarded_port", guest: 80, host: 8081
     subconfig.vm.provider "virtualbox" do |vb|
       subconfig.vm.network "private_network", ip: "10.0.50.102"
     end
@@ -70,6 +72,7 @@ Vagrant.configure(2) do |config|
   config.vm.define "camembert" do |subconfig|
     subconfig.vm.hostname = "proxmox-camembert"
     subconfig.vm.network "forwarded_port", guest: 8006, host: 8006
+    subconfig.vm.network "forwarded_port", guest: 80, host: 8082
     subconfig.vm.provider "virtualbox" do |vb|
       subconfig.vm.network "private_network", ip: "10.0.50.101"
     end
@@ -77,7 +80,7 @@ Vagrant.configure(2) do |config|
       ansible.playbook = "install.yml"
       ansible.limit = "all"
       ansible.groups = ansible_groups
-      ansible.host_vars = ansible_host_vars 
+      ansible.host_vars = ansible_host_vars
       ansible.become = true
     end
   end
