@@ -153,7 +153,7 @@
         name:
           - wireguard
           - pve-headers
-        state: installed
+        state: present
 
     - name: Generate wireguard privatekey
       shell: "wg genkey > {{ wg_private_key_path }}"
@@ -185,7 +185,7 @@
     - name: Install dnsmasq
       apt:
         name: dnsmasq
-        state: installed
+        state: present
       environment:
         RUNLEVEL: 1
 
@@ -209,8 +209,10 @@
         state: present
 
     # TODO
-    # - put consul in a role
+    # - put consul in a role, handles both agent and server
     # - set serial to 1 in prod to avoid data loss
+    # - Create a container
+    # - Ansible the container
     - name: Create consul user
       user:
         name: consul
@@ -315,7 +317,7 @@
 - name: Create containers
   hosts: proxmox
   tasks:
-    - name: List installed container templates
+    - name: List present container templates
       command:
         argv:
           - pveam
@@ -344,10 +346,6 @@
       set_fact:
         proxmox_container_debian: "{{proxmox_container_debian.split()|last}}"
 
-    - name: DBEUG
-      debug:
-        msg: "{{proxmox_container_debian}}"
-
     - name: Download debian 10 container if not here
       command:
         argv:
@@ -356,7 +354,3 @@
           - local
           - "{{ proxmox_container_debian }}"
       when: local_templates.stdout_lines | select("search", proxmox_container_debian) | list | length == 0
-
-
-
-
