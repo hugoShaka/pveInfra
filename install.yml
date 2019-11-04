@@ -131,7 +131,7 @@
         creates: /etc/pve/corosync.conf
       when: "'pve_first_node' not in group_names"
 
-- name: Configure network
+- name: Configure network (wireguard)
   hosts: proxmox
   tasks:
     - name: Apt pin unstable
@@ -203,6 +203,39 @@
         name: dnsmasq
         state: started
 
+    - name: Insert/Update vmbr0 configuration stanza in /etc/network/interfaces
+      blockinfile:
+        path: /etc/network/interfaces
+        block: |
+          auto vmbr0
+          #private sub network
+          iface vmbr0 inet static
+                  address  {{ internal_ip }}
+                  netmask  255.255.255.0
+                  bridge_ports none
+                  bridge_stp off
+                  bridge_fd 0
+
+                  post-up echo 1 > /proc/sys/net/ipv4/ip_forward
+                  post-up   iptables -t nat -A POSTROUTING -s '{{ internal_net }}' -o {{ nat_interface }} -j MASQUERADE
+                  post-up   wg-quick up wg0
+                  post-down   iptables -t nat -D POSTROUTING -s '{{ internal_net }}' -o {{ nat_interface }} -j MASQUERADE
+      notify: reload vmbr0
+      # beware, it will disconnect all running containers and VMs from the network
+  handlers:
+    - name: reload vmbr0
+      command: "ifup vmbr0"
+    - name: generate wireguard publickey
+      shell: "wg pubkey < {{ wg_private_key_path }} > {{ wg_public_key_path }}"
+    - name: restart dnsmasq
+      service:
+        name: dnsmasq
+        state: restarted
+
+
+- name: Configure service-discovery & loadbalancers (consul & haproxy)
+  hosts: proxmox
+  tasks:
     - name: Install unzip
       apt:
         name: unzip
@@ -258,26 +291,6 @@
         state: started
         enabled: true
 
-    - name: Insert/Update vmbr0 configuration stanza in /etc/network/interfaces
-      blockinfile:
-        path: /etc/network/interfaces
-        block: |
-          auto vmbr0
-          #private sub network
-          iface vmbr0 inet static
-                  address  {{ internal_ip }}
-                  netmask  255.255.255.0
-                  bridge_ports none
-                  bridge_stp off
-                  bridge_fd 0
-
-                  post-up echo 1 > /proc/sys/net/ipv4/ip_forward
-                  post-up   iptables -t nat -A POSTROUTING -s '{{ internal_net }}' -o {{ nat_interface }} -j MASQUERADE
-                  post-up   wg-quick up wg0
-                  post-down   iptables -t nat -D POSTROUTING -s '{{ internal_net }}' -o {{ nat_interface }} -j MASQUERADE
-      notify: reload vmbr0
-      # beware, it will disconnect all running containers and VMs from the network
-
     - name: Add haproxy apt key
       apt_key:
         url: https://haproxy.debian.net/bernat.debian.org.gpg
@@ -298,14 +311,6 @@
         remote_src: yes
 
   handlers:
-    - name: reload vmbr0
-      command: "ifup vmbr0"
-    - name: generate wireguard publickey
-      shell: "wg pubkey < {{ wg_private_key_path }} > {{ wg_public_key_path }}"
-    - name: restart dnsmasq
-      service:
-        name: dnsmasq
-        state: restarted
     - name: reload systemd daemons
       systemd:
         daemon_reload: true
