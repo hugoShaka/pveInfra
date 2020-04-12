@@ -1,0 +1,20 @@
+{
+  "service": {
+    "id": "{{ ansible_hostname }}-{{ item.id }}",
+    "name": "{{ item.name }}",
+    "tags": ["{{ item.tags | join('","') }}"],
+    "port": {{ item.port }}
+    {%- if item.auto_check | default(true) -%},
+    "checks": [
+      {
+        "id": "{{ ansible_hostname }}-{{ item.id }}-http-check",
+        "name": "HTTP check of {{ item.id }} on port {{ item.port }}",
+        "http": "{{ item.scheme | default("http") }}://localhost:{{ item.port }}/{{ item.route | default("") }}",
+        "method": "GET",
+        "interval": "60s",
+        "timeout": "10s"
+      }
+    ]
+    {%- endif %}
+  }
+}

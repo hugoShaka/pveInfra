@@ -1,11 +1,11 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
-#
+
 
 ansible_groups = {
   "proxmox" => ["roquefort", "camembert", "morbier"],
   "wireguard" => ["roquefort", "camembert", "morbier"],
-  "consul" => ["roquefort", "camembert", "morbier"],
+  "consul_server" => ["roquefort", "camembert", "morbier"],
   "pve_first_node" => ["roquefort"],
 }
 
@@ -58,7 +58,7 @@ Vagrant.configure(2) do |config|
     subconfig.vm.network "forwarded_port", guest: 80, host: 8080
     subconfig.vm.network "forwarded_port", guest: 8500, host: 8500
     subconfig.vm.provider "virtualbox" do |vb|
-      subconfig.vm.network "private_network", ip: "10.0.50.100"
+      subconfig.vm.network "private_network", ip: "10.0.50.100", name: "personet0", adapter: 2
     end
   end
   config.vm.define "morbier" do |subconfig|
@@ -66,7 +66,7 @@ Vagrant.configure(2) do |config|
     subconfig.vm.network "forwarded_port", guest: 8006, host: 8004
     subconfig.vm.network "forwarded_port", guest: 80, host: 8081
     subconfig.vm.provider "virtualbox" do |vb|
-      subconfig.vm.network "private_network", ip: "10.0.50.102"
+      subconfig.vm.network "private_network", ip: "10.0.50.102", name: "personet0", adapter: 2
     end
   end
   config.vm.define "camembert" do |subconfig|
@@ -74,10 +74,11 @@ Vagrant.configure(2) do |config|
     subconfig.vm.network "forwarded_port", guest: 8006, host: 8006
     subconfig.vm.network "forwarded_port", guest: 80, host: 8082
     subconfig.vm.provider "virtualbox" do |vb|
-      subconfig.vm.network "private_network", ip: "10.0.50.101"
+      subconfig.vm.network "private_network", ip: "10.0.50.101", name: "personet0", adapter: 2
     end
     subconfig.vm.provision "ansible" do |ansible|
       ansible.playbook = "install.yml"
+      ansible.tags = "ingress,service-discovery"
       ansible.limit = "all"
       ansible.groups = ansible_groups
       ansible.host_vars = ansible_host_vars

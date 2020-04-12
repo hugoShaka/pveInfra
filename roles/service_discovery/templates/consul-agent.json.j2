@@ -1,0 +1,8 @@
+{
+  "data_dir": "/var/consul",
+  "log_level": "INFO",
+  "node_name": "{{ansible_hostname}}",
+  "server": false,
+  "bind_addr": "{{internal_ip}}",
+  "retry_join": ["{{groups['consul_server'] | map('extract', hostvars, 'internal_ip') | join('","')}}"]
+}

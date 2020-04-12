@@ -1,0 +1,43 @@
+---
+- name: Download fabio binary
+  get_url:
+    url: "{{ fabio_binary_url }}"
+    dest: /usr/local/bin/fabio
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Create fabio user
+  user:
+    name: fabio
+
+- name: Deploy fabio systemd service
+  copy:
+    src: fabio.service
+    dest: /etc/systemd/system/fabio.service
+  notify:
+    - reload systemd daemons
+    - restart fabio
+
+- name: Create fabio folder
+  file:
+    path: /etc/fabio
+    state: directory
+    owner: root
+    group: fabio
+    mode: 0750
+  notify: restart fabio
+
+- name: Create fabio.properties file
+  template:
+    src: fabio.properties.j2
+    dest: /etc/fabio/fabio.properties
+    mode: 0640
+    owner: root
+    group: fabio
+  notify: restart fabio
+
+- name: Ensure fabiolb is started
+  service:
+    name: fabio
+    state: started

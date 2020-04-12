@@ -1,0 +1,23 @@
+consul_services:
+  - id: consul-ui
+    name: consul_web_ui
+    tags:
+      - urlprefix-consul.localhost/
+    port: 8500
+    auto_check: true
+    route: ui
+
+  - id: fabio-ui
+    name: fabio_web_ui
+    tags:
+      - urlprefix-fabio.localhost/
+    port: 9998
+    auto_check: true
+
+  - id: proxmox-ui
+    name: proxmox_web_ui
+    tags:
+      - urlprefix-proxmox.localhost/
+    port: 8006
+    auto_check: true
+    scheme: "https"

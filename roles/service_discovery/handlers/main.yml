@@ -1,0 +1,14 @@
+---
+- name: reload systemd daemons
+  systemd:
+    daemon_reload: true
+
+- name: reload consul
+  systemd:
+    name: consul
+    state: reloaded
+
+- name: restart consul
+  systemd:
+    name: consul
+    state: restarted

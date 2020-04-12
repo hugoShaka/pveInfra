@@ -37,9 +37,9 @@
         hash_host: false
         name: "{{ hostvars[item[0]].pve_public_ip }}"
         # terrible one-liner
-        key: "{{hostvars[item[0]].pve_public_ip}} {{ hostvars[item[0]].sshd_publickeys.results[item[1]].content | b64decode }}"
+        key: "{{ hostvars[item[0]].pve_public_ip }} {{ hostvars[item[0]].sshd_publickeys.results[item[1]].content | b64decode }}"
       # iterating over 0,1,2 to get the 3 public keys, edcda, rsa, ed25519
-      loop: "{{ groups['proxmox'] | product([0,1,2]) | list}}"
+      loop: "{{ groups['proxmox'] | product([0,1,2]) | list }}"
 
     - name: Trust ssh public keys for other nodes (private ips)
       known_hosts:
@@ -47,9 +47,9 @@
         hash_host: false
         name: "{{ hostvars[item[0]].internal_ip }}"
         # terrible one-liner
-        key: "{{hostvars[item[0]].internal_ip}} {{ hostvars[item[0]].sshd_publickeys.results[item[1]].content | b64decode }}"
+        key: "{{ hostvars[item[0]].internal_ip }} {{ hostvars[item[0]].sshd_publickeys.results[item[1]].content | b64decode }}"
       # iterating over 0,1,2 to get the 3 public keys, edcda, rsa, ed25519
-      loop: "{{ groups['proxmox'] | product([0,1,2]) | list}}"
+      loop: "{{ groups['proxmox'] | product([0,1,2]) | list }}"
 
     - name: Remove PVE-entreprise.list
       file:
@@ -117,7 +117,7 @@
         argv:
          - pvecm
          - create
-         - "{{pve_cluster_name}}"
+         - "{{ pve_cluster_name }}"
         creates: /etc/pve/corosync.conf
       when: "'pve_first_node' in group_names"
 
@@ -130,6 +130,9 @@
           - "-use_ssh"
         creates: /etc/pve/corosync.conf
       when: "'pve_first_node' not in group_names"
+  tags:
+    - pve-cluster
+    - proxmox
 
 - name: Configure network (wireguard)
   hosts: proxmox
@@ -151,9 +154,11 @@
     - name: Install wireguard
       apt:
         name:
-          - wireguard
           - pve-headers
+          - wireguard
         state: present
+
+    # TODO : put reboot stuff here
 
     - name: Generate wireguard privatekey
       shell: "wg genkey > {{ wg_private_key_path }}"
@@ -220,6 +225,7 @@
                   post-up   iptables -t nat -A POSTROUTING -s '{{ internal_net }}' -o {{ nat_interface }} -j MASQUERADE
                   post-up   wg-quick up wg0
                   post-down   iptables -t nat -D POSTROUTING -s '{{ internal_net }}' -o {{ nat_interface }} -j MASQUERADE
+                  post-down   wg-quick down wg0
       notify: reload vmbr0
       # beware, it will disconnect all running containers and VMs from the network
   handlers:
@@ -231,93 +237,33 @@
       service:
         name: dnsmasq
         state: restarted
+  tags:
+    - pve-network
+    - proxmox
 
 
-- name: Configure service-discovery & loadbalancers (consul & haproxy)
+- name: Configure service-discovery (consul)
   hosts: proxmox
-  tasks:
-    - name: Install unzip
-      apt:
-        name: unzip
-        state: present
+  serial: 1
+  roles:
+    - service_discovery
+  tags:
+    - service-discovery
 
-    # TODO
-    # - put consul in a role, handles both agent and server
-    # - set serial to 1 in prod to avoid data loss
-    # - Create a container
-    # - Ansible the container
-    - name: Create consul user
-      user:
-        name: consul
+- name: Configure incoming traffic (fabio)
+  hosts: proxmox
+  roles:
+    - fabiolb
+  tags:
+    - ingress
+    - fabio
 
-    - name: Create consul data directory
-      file:
-        state: directory
-        path: /var/consul
-        owner: consul
-
-    - name: Download consul
-      unarchive:
-        src: https://releases.hashicorp.com/consul/1.6.0/consul_1.6.0_linux_amd64.zip
-        dest: /usr/local/bin/
-        remote_src: yes
-
-    - name: Deploy consul systemd service
-      template:
-        src: consul.service.j2
-        dest: /etc/systemd/system/consul.service
-      notify: reload systemd daemons
-
-    - name: Create consul conf directory
-      file:
-        path: /etc/consul.d/
-        state: directory
-
-    - name: Deploy consul server conf
-      template:
-        src: consul.conf.j2
-        dest: /etc/consul.d/consul.json
-      notify: restart consul
-
-    - name: Deploy consul proxmox service
-      template:
-        src: consul.proxmox.json
-        dest: /etc/consul.d/proxmox.json
-      notify: restart consul
-
-    - name: Start and enable consul
-      systemd:
-        name: consul
-        state: started
-        enabled: true
-
-    - name: Add haproxy apt key
-      apt_key:
-        url: https://haproxy.debian.net/bernat.debian.org.gpg
-
-    - name: Add haptoxy apt repository
-      apt_repository:
-        repo: "deb http://haproxy.debian.net buster-backports-2.0 main"
-        filename: haproxy
-
-    - name: Install haproxy
-      apt:
-        name: "haproxy=2.0.*"
-
-    - name: Download consul-template
-      unarchive:
-        src: https://releases.hashicorp.com/consul-template/0.21.3/consul-template_0.21.3_linux_amd64.zip
-        dest: /usr/local/bin/
-        remote_src: yes
-
-  handlers:
-    - name: reload systemd daemons
-      systemd:
-        daemon_reload: true
-    - name: restart consul
-      systemd:
-        name: consul
-        state: restarted
+    # - name: Configure incoming traffic (haproxy & dnsmasq)
+    #   hosts: proxmox
+    #   roles:
+    #     - ingress
+    #   tags:
+    #     - ingress
 
 - name: Create containers
   hosts: proxmox
@@ -345,11 +291,11 @@
       set_fact:
         proxmox_container_debian: '{{ available_templates.stdout_lines|
                                       select("search", ".*debian-10.*-standard.*")|
-                                      list|first}}'
+                                      list|first }}'
 
     - name: Clean available image name
       set_fact:
-        proxmox_container_debian: "{{proxmox_container_debian.split()|last}}"
+        proxmox_container_debian: "{{ proxmox_container_debian.split()|last }}"
 
     - name: Download debian 10 container if not here
       command:
