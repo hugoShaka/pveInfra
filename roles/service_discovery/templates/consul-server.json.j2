@@ -6,5 +6,6 @@
   "server": true,
   "bootstrap_expect": 3,
   "bind_addr": "{{internal_ip}}",
+  "client_addr": "127.0.0.1 {{internal_ip}}",
   "retry_join": ["{{groups['consul_server']|difference([inventory_hostname]) | map('extract', hostvars, 'internal_ip') | join('","')}}"]
 }
