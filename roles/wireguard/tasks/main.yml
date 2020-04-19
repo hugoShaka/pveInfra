@@ -1,0 +1,69 @@
+- name: Apt pin unstable
+  blockinfile:
+    path: /etc/apt/preferences.d/limit-unstable
+    block: |
+      Package: *
+      Pin: release a=unstable
+      Pin-Priority: 90
+    create: true
+
+- name: Add unstable source for wireguard
+  apt_repository:
+    repo: "deb http://deb.debian.org/debian/ unstable main"
+    filename: unstable-wireguard
+
+- name: Install wireguard
+  apt:
+    name:
+      - pve-headers
+      - wireguard
+    state: present
+  notify: reboot server
+
+- name: Generate wireguard privatekey
+  shell: "wg genkey > {{ wg_private_key_path }}"
+  args:
+    creates: "{{ wg_private_key_path }}"
+  notify: generate wireguard publickey
+
+- name: Load kernel modules & generate public keys if needed
+  meta: flush_handlers
+
+- name: Read privatekey
+  slurp:
+    src: "{{ wg_private_key_path }}"
+  register: wg_private_key
+
+- name: Read publickey
+  slurp:
+    src: "{{ wg_public_key_path }}"
+  register: wg_public_key
+
+- name: generate wg0.conf
+  template:
+    src: wg0.conf.j2
+    dest: /etc/wireguard/wg0.conf
+    owner: root
+    group: root
+    mode: 0600
+
+- name: Insert/Update vmbr0 configuration stanza in /etc/network/interfaces
+  blockinfile:
+    path: /etc/network/interfaces
+    block: |
+      auto vmbr0
+      #private sub network
+      iface vmbr0 inet static
+              address  {{ internal_ip }}
+              netmask  255.255.255.0
+              bridge_ports none
+              bridge_stp off
+              bridge_fd 0
+
+              post-up echo 1 > /proc/sys/net/ipv4/ip_forward
+              post-up   iptables -t nat -A POSTROUTING -s '{{ internal_net }}' -o {{ nat_interface }} -j MASQUERADE
+              post-up   wg-quick up wg0
+              post-down   iptables -t nat -D POSTROUTING -s '{{ internal_net }}' -o {{ nat_interface }} -j MASQUERADE
+              post-down   wg-quick down wg0
+  notify: reload vmbr0
+  # beware, it will disconnect all running containers and VMs from the network

@@ -1,0 +1,21 @@
+- name: Install dnsmasq
+  apt:
+    name: dnsmasq
+    state: present
+  environment:
+    # This avoids dnsmasq to start running once installed
+    RUNLEVEL: 1
+
+- name: Deploy dnsmasq.conf
+  template:
+    src: dnsmasq.conf.j2
+    dest: /etc/dnsmasq.conf
+    owner: root
+    group: root
+    mode: 0640
+  notify: restart dnsmasq
+
+- name: Ensure dnsmasq is started
+  service:
+    name: dnsmasq
+    state: started

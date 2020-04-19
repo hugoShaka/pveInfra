@@ -1,0 +1,10 @@
+- name: reboot server
+  reboot:
+  throttle: 1
+
+- name: reload vmbr0
+  command: "ifup vmbr0"
+
+- name: generate wireguard publickey
+  shell: "wg pubkey < {{ wg_private_key_path }} > {{ wg_public_key_path }}"
+  # Dirty but works, and it's a handler so no big deal
