@@ -1,0 +1,51 @@
+- name: Create containers
+  hosts: proxmox
+  tasks:
+    - name: List present container templates
+      command:
+        argv:
+          - pveam
+          - list
+          - local
+      register: local_templates
+      changed_when: false
+
+    - name: List available containe templates
+      command:
+        argv:
+          - pveam
+          - available
+          - "-section"
+          - system
+      register: available_templates
+      changed_when: false
+
+    - name: Parse available images to get latest debian 10
+      set_fact:
+        proxmox_container_debian: '{{ available_templates.stdout_lines|
+                                      select("search", ".*debian-10.*-standard.*")|
+                                      list|first }}'
+
+    - name: Clean available image name
+      set_fact:
+        proxmox_container_debian: "{{ proxmox_container_debian.split()|last }}"
+
+    - name: Download debian 10 container if not here
+      command:
+        argv:
+          - pveam
+          - download
+          - local
+          - "{{ proxmox_container_debian }}"
+      when: local_templates.stdout_lines | select("search", proxmox_container_debian) | list | length == 0
+
+      ## Not finished yet
+      #    - name: Create container
+      #      proxmox:
+      #        node: 'uk-mc02'
+      #        api_user: 'root@pam'
+      #        api_password: 'root'
+      #        api_host: '10.50.0.100'
+      #        password: 'toto'
+      #        hostname: 'example.org'
+      #        ostemplate: 'local:vztmpl/ubuntu-14.04-x86_64.tar.gz'

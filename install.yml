@@ -44,7 +44,6 @@
     - pve-network
     - proxmox
 
-
 - name: Configure service-discovery (consul)
   hosts: proxmox
   serial: 1
@@ -52,6 +51,7 @@
     - service_discovery
   tags:
     - service-discovery
+    - ingress
 
 - name: Configure incoming traffic (fabio)
   hosts: proxmox
