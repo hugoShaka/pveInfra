@@ -41,3 +41,4 @@
   service:
     name: fabio
     state: started
+    enabled: true

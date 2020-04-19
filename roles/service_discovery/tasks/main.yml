@@ -14,11 +14,11 @@
     path: /var/consul
     owner: consul
 
-    #- name: Download consul
-    #  unarchive:
-    #    src: https://releases.hashicorp.com/consul/1.6.0/consul_1.6.0_linux_amd64.zip
-    #    dest: /usr/local/bin/
-    #    remote_src: yes
+- name: Download consul
+  unarchive:
+    src: https://releases.hashicorp.com/consul/1.6.0/consul_1.6.0_linux_amd64.zip
+    dest: /usr/local/bin/
+    remote_src: yes
 
 - name: Deploy consul systemd service
   copy:
@@ -65,5 +65,10 @@
     group: consul
     mode: 0640
   when: "'consul_server' in group_names"
-  notify: reload consul
+  notify: restart consul
 
+- name: Start & enable consul
+  systemd:
+    name: consul
+    state: started
+    enabled: true

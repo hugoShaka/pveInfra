@@ -157,8 +157,7 @@
           - pve-headers
           - wireguard
         state: present
-
-    # TODO : put reboot stuff here
+      notify: reboot server
 
     - name: Generate wireguard privatekey
       shell: "wg genkey > {{ wg_private_key_path }}"
@@ -166,7 +165,7 @@
         creates: "{{ wg_private_key_path }}"
       notify: generate wireguard publickey
 
-    - name: Generate public keys if needed
+    - name: Load kernel modules & generate public keys if needed
       meta: flush_handlers
 
     - name: Read privatekey
@@ -229,6 +228,8 @@
       notify: reload vmbr0
       # beware, it will disconnect all running containers and VMs from the network
   handlers:
+    - name: reboot server
+      reboot:
     - name: reload vmbr0
       command: "ifup vmbr0"
     - name: generate wireguard publickey
