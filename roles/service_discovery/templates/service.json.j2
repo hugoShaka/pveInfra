@@ -11,6 +11,9 @@
         "name": "HTTP check of {{ item.id }} on port {{ item.port }}",
         "http": "{{ item.scheme | default("http") }}://localhost:{{ item.port }}/{{ item.route | default("") }}",
         "method": "GET",
+        {%- if item.tls_skip_verify | default(false) %}
+        "tls_skip_verify": true,
+        {%- endif %}
         "interval": "60s",
         "timeout": "10s"
       }

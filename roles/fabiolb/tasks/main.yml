@@ -37,6 +37,53 @@
     group: fabio
   notify: restart fabio
 
+- name: Generate certificate folder
+  file:
+    state: directory
+    path: /etc/ssl/fabio/
+    owner: root
+    group: fabio
+    mode: 0750
+
+- name: Install pip3
+  apt:
+    name: python3-pip
+    state: present
+
+- name: Ensure python OpenSSL dependencies are installed.
+  pip:
+    executable: pip3
+    name: pyOpenSSL
+    state: present
+
+- name: Generate dummy certificate
+  block:
+  - name: Generate an OpenSSL private key.
+    openssl_privatekey:
+      path: /etc/ssl/fabio/dummy-key.pem
+      owner: root
+      group: fabio
+      mode: 0640
+
+  - name: Generate an OpenSSL CSR.
+    openssl_csr:
+      path: /etc/ssl/fabio/dummy.csr
+      privatekey_path: /etc/ssl/fabio/dummy-key.pem
+      common_name: "local.shaka.xyz"
+      owner: root
+      group: fabio
+      mode: 0640
+
+  - name: Generate a Self Signed OpenSSL certificate.
+    openssl_certificate:
+      path: /etc/ssl/fabio/dummy-cert.pem
+      privatekey_path: /etc/ssl/fabio/dummy-key.pem
+      csr_path: /etc/ssl/fabio/dummy.csr
+      provider: selfsigned
+      owner: root
+      group: fabio
+      mode: 0640
+
 - name: Ensure fabiolb is started
   service:
     name: fabio
