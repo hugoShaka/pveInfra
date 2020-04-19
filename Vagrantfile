@@ -11,6 +11,7 @@ ansible_groups = {
 
 ansible_host_vars = {
   "roquefort" => {
+    "ansible_python_interpreter" => "/usr/bin/python3",
     "internal_ip" => "10.10.10.1",
     "internal_net" => "10.10.10.0/24",
     "internal_net_prefix" => "10.10.10",
@@ -22,6 +23,7 @@ ansible_host_vars = {
     "pve_cluster_name" => "hugo",
   },
   "camembert" => {
+    "ansible_python_interpreter" => "/usr/bin/python3",
     "internal_ip" => "10.10.11.1",
     "internal_net" => "10.10.11.0/24",
     "internal_net_prefix" => "10.10.11",
@@ -33,6 +35,7 @@ ansible_host_vars = {
     "pve_cluster_name" => "hugo",
   },
   "morbier" => {
+    "ansible_python_interpreter" => "/usr/bin/python3",
     "internal_ip" => "10.10.12.1",
     "internal_net" => "10.10.12.0/24",
     "internal_net_prefix" => "10.10.12",
