@@ -2,110 +2,11 @@
 - name: Bootstrap proxmox
   hosts: proxmox
   become: true
-  tasks:
-    - name: Create .ssh directory for user root
-      file:
-        path: /root/.ssh
-        state: directory
-
-    - name: Generate root ssh keys
-      openssh_keypair:
-        path: /root/.ssh/id_rsa
-        size: 4096
-        comment: "proxmox-cluster-{{ inventory_hostname }}"
-      register: ssh_keypair
-
-    - name: Recover sshd public keys
-      slurp:
-        path: "/etc/ssh/{{ item }}.pub"
-      loop:
-        - ssh_host_ecdsa_key
-        - ssh_host_ed25519_key
-        - ssh_host_rsa_key
-      register: sshd_publickeys
-
-    - name: Authorize other cluster nodes ssh keys
-      authorized_key:
-        user: root
-        state: present
-        key: "{{ hostvars[item].ssh_keypair.public_key }}"
-      loop: "{{ groups['proxmox'] }}"
-
-    - name: Trust ssh public keys for other nodes (public ips)
-      known_hosts:
-        path: /root/.ssh/known_hosts
-        hash_host: false
-        name: "{{ hostvars[item[0]].pve_public_ip }}"
-        # terrible one-liner
-        key: "{{ hostvars[item[0]].pve_public_ip }} {{ hostvars[item[0]].sshd_publickeys.results[item[1]].content | b64decode }}"
-      # iterating over 0,1,2 to get the 3 public keys, edcda, rsa, ed25519
-      loop: "{{ groups['proxmox'] | product([0,1,2]) | list }}"
-
-    - name: Trust ssh public keys for other nodes (private ips)
-      known_hosts:
-        path: /root/.ssh/known_hosts
-        hash_host: false
-        name: "{{ hostvars[item[0]].internal_ip }}"
-        # terrible one-liner
-        key: "{{ hostvars[item[0]].internal_ip }} {{ hostvars[item[0]].sshd_publickeys.results[item[1]].content | b64decode }}"
-      # iterating over 0,1,2 to get the 3 public keys, edcda, rsa, ed25519
-      loop: "{{ groups['proxmox'] | product([0,1,2]) | list }}"
-
-    - name: Remove PVE-entreprise.list
-      file:
-        path: /etc/apt/sources.list.d/pve-enterprise.list
-        state: absent
-
-    - name: Add gpg
-      apt:
-        name: gnupg2
-        state: present
-        update_cache: true
-
-    - name: Log default ipv4
-      debug:
-        msg: "{{ ansible_default_ipv4 }}"
-
-    - name: Log all ip addresses
-      debug:
-        msg: "{{ ansible_all_ipv4_addresses }}"
-
-    - name: Add DNS entry to hostfile
-      template:
-        src: hosts.j2
-        dest: /etc/hosts
-
-    - name: Add PGP key
-      apt_key:
-        url: http://download.proxmox.com/debian/proxmox-ve-release-6.x.gpg
-        state: present
-
-    - name: Add sources.list
-      apt_repository:
-        repo: "deb http://download.proxmox.com/debian/pve buster pve-no-subscription"
-        filename: pve-install-repo
-
-    - name: Perform full upgrade
-      apt:
-        upgrade: full
-
-    - name: Install proxmox
-      apt:
-        name:
-          - proxmox-ve
-          - postfix
-          - open-iscsi
-        state: present
-
-    - name: Remove PVE-entreprise.lisr
-      file:
-        path: /etc/apt/sources.list.d/pve-enterprise.list
-        state: absent
-
-    - name: Remove os-prober
-      apt:
-        name: os-prober
-        state: absent
+  roles:
+    - proxmox
+  tags:
+    - pve-bootstrap
+    - proxmox
 
 - name: Clusterize PVEs
   hosts: proxmox
@@ -230,6 +131,7 @@
   handlers:
     - name: reboot server
       reboot:
+      throttle: 1
     - name: reload vmbr0
       command: "ifup vmbr0"
     - name: generate wireguard publickey
@@ -258,13 +160,6 @@
   tags:
     - ingress
     - fabio
-
-    # - name: Configure incoming traffic (haproxy & dnsmasq)
-    #   hosts: proxmox
-    #   roles:
-    #     - ingress
-    #   tags:
-    #     - ingress
 
 - name: Create containers
   hosts: proxmox
