@@ -8,3 +8,21 @@
 - name: generate wireguard publickey
   shell: "wg pubkey < {{ wg_private_key_path }} > {{ wg_public_key_path }}"
   # Dirty but works, and it's a handler so no big deal
+
+- name: "Seamless reload if wg0 already up : load conf"
+  shell:
+    cmd: "wg addconf wg0 <(wg-quick strip wg0)"
+    chdir: /etc/wireguard/
+    executable: /bin/bash
+  listen: reload wg config if needed
+  when: wg_conf_before_changes.stat.exists
+
+- name: "Seamless reload if wg0 already up : add ip routes"
+  command:
+    argv: ["ip", "-4", "route", "add", "{{ hostvars[item].internal_net }}", "dev", "wg0"]
+  # We add a route for each other server
+  loop: "{{groups['proxmox']|difference([inventory_hostname])}}"
+  listen: reload wg config if needed
+  when: wg_conf_before_changes.stat.exists
+  # This will fail if the route already exist, we don't mind
+  ignore_errors: true

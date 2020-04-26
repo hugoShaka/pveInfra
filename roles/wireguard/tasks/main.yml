@@ -39,6 +39,12 @@
     src: "{{ wg_public_key_path }}"
   register: wg_public_key
 
+- name: check if a configuration file is already present
+  # If there is a file and it changes, we will perform a seamless config reload
+  stat:
+    path: /etc/wireguard/wg0.conf
+  register: wg_conf_before_changes
+
 - name: generate wg0.conf
   template:
     src: wg0.conf.j2
@@ -46,6 +52,7 @@
     owner: root
     group: root
     mode: 0600
+  notify: reload wg config if needed
 
 - name: Insert/Update vmbr0 configuration stanza in /etc/network/interfaces
   blockinfile:

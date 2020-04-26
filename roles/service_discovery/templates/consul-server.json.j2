@@ -4,8 +4,10 @@
   "ui": true,
   "node_name": "{{ansible_hostname}}",
   "server": true,
-  "bootstrap_expect": 3,
+  "bootstrap_expect": {{ groups['consul_server'] | length }},
   "bind_addr": "{{internal_ip}}",
-  "client_addr": "127.0.0.1 {{internal_ip}}",
+  "client_addr": "127.0.0.1 {{internal_ip}}"
+  {%- if groups['consul_server']|length > 1 %},
   "retry_join": ["{{groups['consul_server']|difference([inventory_hostname]) | map('extract', hostvars, 'internal_ip') | join('","')}}"]
+  {%- endif %}
 }
