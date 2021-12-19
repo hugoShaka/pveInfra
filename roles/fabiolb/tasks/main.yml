@@ -45,15 +45,12 @@
     group: fabio
     mode: 0750
 
-- name: Install pip3
+- name: Install pip3 and python libs dependencies
   apt:
-    name: python3-pip
-    state: present
-
-- name: Ensure python OpenSSL dependencies are installed.
-  pip:
-    executable: pip3
-    name: pyOpenSSL
+    name:
+      - python3-pip
+      - python3-openssl
+      - python3-passlib
     state: present
 
 - name: Generate dummy certificate
@@ -83,6 +80,15 @@
       owner: root
       group: fabio
       mode: 0640
+
+- name: Create admin htpasswd file
+  community.general.htpasswd:
+    path: /etc/fabio/admin.creds
+    name: admin
+    password: "{{ fabio_admin_password }}"
+    owner: root
+    group: fabio
+    mode: 0640
 
 - name: Ensure fabiolb is started
   service:

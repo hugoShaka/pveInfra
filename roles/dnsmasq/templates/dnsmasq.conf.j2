@@ -56,7 +56,7 @@
 # If you don't want dnsmasq to read /etc/resolv.conf or any other
 # file, getting its servers from this file instead (see below), then
 # uncomment this.
-#no-resolv
+no-resolv
 
 # If you don't want dnsmasq to poll /etc/resolv.conf or other resolv
 # files for changes and re-read them then uncomment this.
@@ -65,6 +65,8 @@
 # Add other name servers here, with domain specs if they are for
 # non-public domains.
 #server=/localnet/192.168.0.1
+server=/consul/127.0.0.1#8600
+server={{ dnsmasq_upstream_server }}
 
 # Example of routing PTR queries to nameservers: this will send all
 # address->name queries for 192.168.3/24 to nameserver 10.1.2.3

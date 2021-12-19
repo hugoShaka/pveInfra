@@ -1,0 +1,24 @@
+consul_services:
+  - id: consul-ui
+    name: consul_web_ui
+    tags:
+      - urlprefix-consul.local.shaka.xyz:8443/
+    port: 8500
+    auto_check: true
+    route: ui
+
+  - id: fabio-ui
+    name: fabio_web_ui
+    tags:
+      - urlprefix-fabio.local.shaka.xyz:8443/
+    port: 9998
+    auto_check: true
+
+  - id: proxmox-ui
+    name: proxmox_web_ui_{{ ansible_hostname }}
+    tags:
+      - urlprefix-{{ ansible_hostname }}.proxmox.local.shaka.xyz:8443/ proto=https tlsskipverify=true
+    port: 8006
+    auto_check: true
+    scheme: "https"
+    tls_skip_verify: true

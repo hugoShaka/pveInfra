@@ -2,13 +2,14 @@
 # vi: set ft=ruby :
 
 
-$NUM_HYPERVISORS = 3
+$NUM_HYPERVISORS = 1
 
 $ANSIBLE_GROUPS = {
   "proxmox" => ["roquefort", "camembert", "morbier"],
   "wireguard" => ["roquefort", "camembert", "morbier"],
   "consul_server" => ["roquefort", "camembert", "morbier"],
   "pve_first_node" => ["roquefort"],
+  "proxmox:vars" => {"fabio_admin_password" => "placeholder_for_local"},
 }
 
 $ANSIBLE_HOST_VARS = {

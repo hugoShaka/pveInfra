@@ -1,0 +1,74 @@
+---
+- name: Install unzip
+  apt:
+    name: unzip
+    state: present
+
+- name: Create consul user
+  user:
+    name: consul
+
+- name: Create consul data directory
+  file:
+    state: directory
+    path: /var/consul
+    owner: consul
+
+- name: Download consul
+  unarchive:
+    src: https://releases.hashicorp.com/consul/1.6.0/consul_1.6.0_linux_amd64.zip
+    dest: /usr/local/bin/
+    remote_src: yes
+
+- name: Deploy consul systemd service
+  copy:
+    src: consul.service
+    dest: /etc/systemd/system/consul.service
+  notify:
+    - reload systemd daemons
+    - reload consul
+
+- name: Create consul.d directory
+  file:
+    path: /etc/consul.d/
+    state: directory
+    owner: root
+    group: consul
+    mode: 0750
+  notify: reload consul
+
+- name: Declare services
+  template:
+    src: service.json.j2
+    dest: "/etc/consul.d/service.{{ item.name }}.json"
+    owner: root
+    group: consul
+    mode: 0640
+  loop: "{{ consul_services }}"
+  notify: reload consul
+
+- name: Create agent configuration
+  template:
+    src: consul-agent.json.j2
+    dest: /etc/consul.d/agent.json
+    owner: root
+    group: consul
+    mode: 0640
+  when: "'consul_server' not in group_names"
+  notify: reload consul
+
+- name: Create server configuration
+  template:
+    src: consul-server.json.j2
+    dest: /etc/consul.d/server.json
+    owner: root
+    group: consul
+    mode: 0640
+  when: "'consul_server' in group_names"
+  notify: restart consul
+
+- name: Start & enable consul
+  systemd:
+    name: consul
+    state: started
+    enabled: true

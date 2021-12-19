@@ -1,2 +1,3 @@
-proxy.addr = :80,:443;cs=local
-proxy.cs = cs=local;type=path;cert=/etc/ssl/fabio/
+proxy.addr = :80,:443;cs={{ fabio_cs.name }},:465;proto=tcp,:587;proto=tcp,:995;proto=tcp
+proxy.cs = cs={{ fabio_cs.name }};type={{ fabio_cs.type }};cert={{ fabio_cs.cert }}
+proxy.auth = name=admin;type=basic;file=/etc/fabio/admin.creds;
