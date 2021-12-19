@@ -44,13 +44,12 @@ problem.
 * secure the consul access
 * install prometheus-node-exporter on the VMs and declare it in consul
 * set utc everywhere
-* setup fabio to use certs from consul
 
 ## Local setup
 
 ### Requirements
 
-* ansible >= 2.8
+* python3 with virtualenv (so you don't pollute your system with weird ansible versions)
 * Vagrant with Virtalbox provider
 
 ### First install
