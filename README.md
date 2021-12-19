@@ -1,6 +1,6 @@
 ## Introduction
 
-This is the role I use to deploy & manage my few servers.
+This is the collection of roles I use to deploy & manage a few servers.
 
 This :
 * Installs proxmox 6
