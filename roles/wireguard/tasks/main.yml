@@ -1,4 +1,4 @@
-- name: Apt pin unstable
+- name: Apt pin unstable (buster)
   blockinfile:
     path: /etc/apt/preferences.d/limit-unstable
     block: |
@@ -6,11 +6,15 @@
       Pin: release a=unstable
       Pin-Priority: 90
     create: true
+  when:
+    - ansible_distribution_release == "buster"
 
-- name: Add unstable source for wireguard
+- name: Add unstable source for wireguard (buster)
   apt_repository:
     repo: "deb http://deb.debian.org/debian/ unstable main"
     filename: unstable-wireguard
+  when:
+    - ansible_distribution_release == "buster"
 
 - name: Install wireguard
   apt:

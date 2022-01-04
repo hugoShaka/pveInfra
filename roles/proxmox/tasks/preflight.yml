@@ -1,0 +1,19 @@
+- name: Check distro is debian
+  fail:
+    msg: "This role only supports debian"
+  when: ansible_distribution != "Debian"
+
+- name: Check if PVE version is supported
+  fail:
+    msg: "This PVE version is not supported"
+  when: pve_version not in [6,7]
+
+- name: Check debian version for PVE 6
+  fail:
+    msg: "PVE 6 requires debian Buster (10)"
+  when: pve_version == 6 and ansible_distribution_release != "buster"
+
+- name: Check debian version for PVE 7
+  fail:
+    msg: "PVE 7 requires debian bullseye (11)"
+  when: pve_version == 7 and ansible_distribution_release != "bullseye"

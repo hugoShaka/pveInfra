@@ -1,3 +1,6 @@
+- name: Include preflight checks
+  include: preflight.yml
+
 - name: Create .ssh directory for user root
   file:
     path: /root/.ssh
@@ -70,19 +73,39 @@
     src: hosts.j2
     dest: /etc/hosts
 
-- name: Add PGP key
+- name: Add PGP key (PVE 6)
   apt_key:
     url: http://download.proxmox.com/debian/proxmox-ve-release-6.x.gpg
     state: present
+  when: pve_version == 6
+
+- name: Add PGP key (PVE 7)
+  apt_key:
+    url: http://download.proxmox.com/debian/proxmox-release-bullseye.gpg
+    state: present
+  when: pve_version == 7
 
 - name: Add sources.list
   apt_repository:
-    repo: "deb http://download.proxmox.com/debian/pve buster pve-no-subscription"
+    repo: "deb http://download.proxmox.com/debian/pve {{ ansible_distribution_release }} pve-no-subscription"
     filename: pve-install-repo
 
 - name: Perform full upgrade
   apt:
     upgrade: full
+
+# PVE 7 installs ifupdown2, but it fails when loading default config
+# from ifupdown because it trips on the "source-directory" directive, this task
+# converts it into a supported syntax
+- name: Make interfaces configuration ifupdown2-compliant
+  ansible.builtin.lineinfile:
+    path: /etc/network/interfaces
+    regexp: '^source-directory (.*)'
+    line: 'source \1/*'
+    backrefs: yes
+    owner: root
+    group: root
+    mode: '0644'
 
 - name: Install proxmox
   apt:
@@ -92,7 +115,7 @@
       - open-iscsi
     state: present
 
-- name: Remove PVE-entreprise.lisr
+- name: Remove PVE-entreprise.list
   file:
     path: /etc/apt/sources.list.d/pve-enterprise.list
     state: absent

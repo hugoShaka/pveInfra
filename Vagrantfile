@@ -9,7 +9,10 @@ $ANSIBLE_GROUPS = {
   "wireguard" => ["roquefort", "camembert", "morbier"],
   "consul_server" => ["roquefort", "camembert", "morbier"],
   "pve_first_node" => ["roquefort"],
-  "proxmox:vars" => {"fabio_admin_password" => "placeholder_for_local"},
+  "proxmox:vars" => {
+    "fabio_admin_password" => "placeholder_for_local",
+    "pve_version" => 7,
+  },
 }
 
 $ANSIBLE_HOST_VARS = {
@@ -102,7 +105,7 @@ def configure_boxes(config, box_id)
 end
 
 Vagrant.configure(2) do |config|
-  config.vm.box = "debian/buster64"
+  config.vm.box = "debian/bullseye64"
   config.vm.provider "virtualbox" do |v|
     v.memory = 2048
     v.cpus = 1
